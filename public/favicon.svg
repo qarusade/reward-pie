@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#FFE14D"/>
+  <g transform="translate(256 256)">
+    <circle r="190" fill="#111111"/>
+    <circle r="176" fill="#E39B45"/>
+    <circle r="152" fill="#C8371F"/>
+    <circle r="144" fill="#F4C247"/>
+    <circle cx="-40" cy="-78" r="26" fill="#B42A1A"/>
+    <circle cx="-86" cy="16" r="26" fill="#B42A1A"/>
+    <circle cx="-28" cy="70" r="26" fill="#B42A1A"/>
+    <circle cx="-4" cy="-6" r="22" fill="#B42A1A"/>
+    <ellipse cx="-92" cy="-60" rx="16" ry="8" fill="#3C8D3F" transform="rotate(-30 -92 -60)"/>
+    <ellipse cx="-70" cy="96" rx="14" ry="7" fill="#3C8D3F" transform="rotate(25 -70 96)"/>
+    <!-- нераскрытая четверть -->
+    <path d="M0 0 L0 -178 A178 178 0 0 1 178 0 Z" fill="#FFFFFF"/>
+    <path d="M0 0 L0 -178 A178 178 0 0 1 178 0 Z" fill="none" stroke="#111111" stroke-width="10" stroke-linejoin="round"/>
+    <path d="M0 0 L-126 126 M0 0 L0 178 M0 0 L-178 0" stroke="#111111" stroke-width="8" stroke-linecap="round"/>
+  </g>
+</svg>
