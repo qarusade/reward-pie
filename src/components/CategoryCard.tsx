@@ -3,8 +3,9 @@ import { tasksWord } from '../lib/plural';
 import { progressOf } from '../lib/stats';
 import { useStore } from '../store/store';
 import type { Category, DateKey, Task } from '../types';
-import { CheckIcon, MoreIcon, PlusIcon, TrashIcon } from './Icon';
+import { MoreIcon, PlusIcon } from './Icon';
 import { RewardPie } from './RewardPie';
+import { TaskList } from './TaskList';
 
 interface Props {
   category: Category;
@@ -15,8 +16,6 @@ interface Props {
 }
 
 export function CategoryCard({ category, tasks, date, onEdit }: Props) {
-  const toggleTask = useStore((s) => s.toggleTask);
-  const deleteTask = useStore((s) => s.deleteTask);
   const headingId = useId();
   const p = progressOf(tasks);
   const left = p.total - p.done;
@@ -59,28 +58,7 @@ export function CategoryCard({ category, tasks, date, onEdit }: Props) {
         </div>
       </div>
 
-      {tasks.length > 0 && (
-        <ul className="tasks">
-          {tasks.map((t) => (
-            <li key={t.id} className="task">
-              <button type="button" className="task__toggle" aria-pressed={t.done} onClick={() => toggleTask(t.id)}>
-                <span className="task__box">{t.done && <CheckIcon />}</span>
-                <span className="task__title">{t.title}</span>
-              </button>
-              <button
-                type="button"
-                className="icon-btn task__delete"
-                aria-label={`Удалить задачу «${t.title}»`}
-                onClick={() => {
-                  if (window.confirm(`Удалить задачу «${t.title}»?`)) deleteTask(t.id);
-                }}
-              >
-                <TrashIcon />
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      {tasks.length > 0 && <TaskList tasks={tasks} />}
 
       {!category.archived && <AddTaskForm category={category} date={date} />}
     </section>

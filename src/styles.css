@@ -452,9 +452,46 @@ button:disabled {
 }
 
 .task {
+  position: relative;
   display: flex;
   align-items: stretch;
   border-bottom: 1.5px solid rgba(17, 17, 17, 0.12);
+}
+
+/* Задача, которую сейчас тащат: поднимается над соседями. Тень внутрь — снаружи её обрежет карточка. */
+.task--dragging {
+  z-index: 2;
+  background: var(--paper);
+  box-shadow: inset 0 0 0 2.5px var(--ink);
+}
+
+.task__grip {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  margin-left: 4px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: rgba(17, 17, 17, 0.35);
+  cursor: grab;
+  /* Иначе на телефоне палец на ручке будет скроллить страницу, а не тащить задачу. */
+  touch-action: none;
+  /* И не будет выделять текст или открывать меню долгого нажатия на iPhone. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.task__grip:hover,
+.task--dragging .task__grip {
+  color: var(--ink);
+}
+
+.task--dragging .task__grip {
+  cursor: grabbing;
 }
 
 .task__toggle {
@@ -464,7 +501,7 @@ button:disabled {
   align-items: center;
   gap: 12px;
   min-height: 54px;
-  padding: 8px 4px 8px 14px;
+  padding: 8px 4px 8px 4px;
   background: transparent;
   border: 0;
   text-align: left;

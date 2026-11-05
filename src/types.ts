@@ -29,6 +29,8 @@ export interface Task {
   done: boolean;
   createdAt: number;
   doneAt?: number;
+  /** Место в списке своей категории за свой день: меньше — выше. Меняется перетаскиванием. */
+  order: number;
 }
 
 export type Tab = 'today' | 'history' | 'rewards';

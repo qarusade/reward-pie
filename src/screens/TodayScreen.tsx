@@ -3,6 +3,7 @@ import { CategoryCard } from '../components/CategoryCard';
 import { PlusIcon } from '../components/Icon';
 import { WeekStrip } from '../components/WeekStrip';
 import { dayTitle, formatLong, weekDays } from '../lib/dates';
+import { byOrder } from '../lib/order';
 import { categoriesForDay, dayStats, tasksForDay } from '../lib/stats';
 import { useStore } from '../store/store';
 import type { DateKey } from '../types';
@@ -19,7 +20,7 @@ export function TodayScreen({ date, today, onSelectDate, onEditCategory, onCreat
   const categories = useStore((s) => s.categories);
   const tasks = useStore((s) => s.tasks);
 
-  const dayTasks = useMemo(() => tasksForDay(tasks, date).sort((a, b) => a.createdAt - b.createdAt), [tasks, date]);
+  const dayTasks = useMemo(() => tasksForDay(tasks, date).sort(byOrder), [tasks, date]);
   const cats = useMemo(() => categoriesForDay(categories, dayTasks), [categories, dayTasks]);
   const stats = useMemo(() => dayStats(tasks, date), [tasks, date]);
   const week = useMemo(

@@ -4,7 +4,7 @@ import { categoriesForDay, dayStats, historyDays, pieGeometry, progressOf, rewar
 
 let seq = 0;
 const task = (categoryId: string, date: string, done: boolean): Task => ({
-  id: String(++seq), categoryId, date, title: 't' + seq, done, createdAt: seq,
+  id: String(++seq), categoryId, date, title: 't' + seq, done, createdAt: seq, order: seq,
 });
 const cat = (id: string, createdAt: number, archived = false): Category => ({
   id, name: id, color: '#000', reward: { kind: 'pizza', name: 'Пицца' }, createdAt, archived,
