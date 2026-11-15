@@ -14,6 +14,7 @@ import {
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { CSSProperties } from 'react';
+import { formatDayMonth } from '../lib/dates';
 import { useStore } from '../store/store';
 import type { Task } from '../types';
 import { CheckIcon, GripIcon, TrashIcon } from './Icon';
@@ -93,7 +94,13 @@ function TaskRow({ task }: { task: Task }) {
       </button>
       <button type="button" className="task__toggle" aria-pressed={task.done} onClick={() => toggleTask(task.id)}>
         <span className="task__box">{task.done && <CheckIcon />}</span>
-        <span className="task__title">{task.title}</span>
+        <span className="task__text">
+          <span className="task__title">{task.title}</span>
+          {task.carriedFrom && <span className="task__note">перенесена с {formatDayMonth(task.carriedFrom)}</span>}
+          {task.carriedTo && !task.done && (
+            <span className="task__note">перенесена на {formatDayMonth(task.carriedTo)}</span>
+          )}
+        </span>
       </button>
       <button
         type="button"

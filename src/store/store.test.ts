@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { migrate, useStore } from './store';
 
-const reset = () => useStore.setState({ categories: [], tasks: [], seeded: false });
+const reset = () => useStore.setState({ categories: [], tasks: [], seeded: false, carryDismissedFrom: undefined });
 
 describe('store', () => {
   beforeEach(reset);
@@ -77,5 +77,33 @@ describe('store', () => {
       { ...v1.tasks[0], order: 1 },
       { ...v1.tasks[1], order: 0 },
     ]);
+  });
+
+  it('переносит вчерашние незакрытые на сегодня один раз, «Не нужно» прячет предложение', () => {
+    const { addCategory, addTask } = useStore.getState();
+    const id = addCategory({ name: 'A', color: '#000', reward: { kind: 'pizza', name: 'Пицца' } });
+    addTask(id, '2026-11-05', 'хвост');
+    addTask(id, '2026-11-05', 'сделано');
+    useStore.getState().toggleTask(useStore.getState().tasks[1].id);
+
+    useStore.getState().carryOver('2026-11-06');
+    useStore.getState().carryOver('2026-11-06');
+    const today = useStore.getState().tasks.filter((t) => t.date === '2026-11-06');
+    expect(today.map((t) => [t.title, t.done, t.carriedFrom])).toEqual([['хвост', false, '2026-11-05']]);
+
+    addTask(id, '2026-11-06', 'не успел');
+    useStore.getState().dismissCarry('2026-11-06');
+    useStore.getState().carryOver('2026-11-07');
+    expect(useStore.getState().tasks.filter((t) => t.date === '2026-11-07')).toHaveLength(0);
+  });
+
+  it('данные без новых полей читаются как есть, версия не меняется', () => {
+    const v2 = {
+      categories: [],
+      tasks: [{ id: 'a', categoryId: 'work', date: '2026-11-05', title: 'a', done: false, createdAt: 1, order: 0 }],
+      seeded: true,
+    };
+    expect(migrate(v2, 2)).toEqual({ ...v2, carryDismissedFrom: undefined });
+    expect(useStore.persist.getOptions().version).toBe(2);
   });
 });

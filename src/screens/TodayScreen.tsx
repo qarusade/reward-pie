@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
+import { CarryBanner } from '../components/CarryBanner';
 import { CategoryCard } from '../components/CategoryCard';
 import { PlusIcon } from '../components/Icon';
 import { WeekStrip } from '../components/WeekStrip';
+import { findCarryOffer } from '../lib/carry';
 import { dayTitle, formatLong, weekDays } from '../lib/dates';
 import { byOrder } from '../lib/order';
 import { categoriesForDay, dayStats, tasksForDay } from '../lib/stats';
@@ -19,10 +21,15 @@ interface Props {
 export function TodayScreen({ date, today, onSelectDate, onEditCategory, onCreateCategory }: Props) {
   const categories = useStore((s) => s.categories);
   const tasks = useStore((s) => s.tasks);
+  const carryDismissedFrom = useStore((s) => s.carryDismissedFrom);
 
   const dayTasks = useMemo(() => tasksForDay(tasks, date).sort(byOrder), [tasks, date]);
   const cats = useMemo(() => categoriesForDay(categories, dayTasks), [categories, dayTasks]);
   const stats = useMemo(() => dayStats(tasks, date), [tasks, date]);
+  const carry = useMemo(
+    () => (date === today ? findCarryOffer(tasks, categories, today, carryDismissedFrom) : null),
+    [tasks, categories, today, date, carryDismissedFrom],
+  );
   const week = useMemo(
     () =>
       weekDays(date).map((key) => {
@@ -30,6 +37,7 @@ export function TodayScreen({ date, today, onSelectDate, onEditCategory, onCreat
         return {
           key,
           pct: s.pct,
+          total: s.total,
           hasTasks: s.total > 0,
           isFuture: key > today,
           isToday: key === today,
@@ -75,6 +83,8 @@ export function TodayScreen({ date, today, onSelectDate, onEditCategory, onCreat
           <WeekStrip days={week} today={today} onSelect={onSelectDate} />
         </section>
       </div>
+
+      {carry && <CarryBanner offer={carry} today={today} categories={categories} />}
 
       {cats.length === 0 ? (
         <div className="card empty">

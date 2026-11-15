@@ -47,6 +47,12 @@ const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const longFmt = new Intl.DateTimeFormat('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
 const longYearFmt = new Intl.DateTimeFormat('ru-RU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 const weekdayFmt = new Intl.DateTimeFormat('ru-RU', { weekday: 'long' });
+const dayMonthFmt = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long' });
+
+/** «5 ноября» — для подписей «перенесена с 5 ноября». */
+export function formatDayMonth(key: DateKey): string {
+  return dayMonthFmt.format(fromKey(key));
+}
 
 /** «Четверг, 5 ноября»; год добавляется, если он не совпадает с годом `today`. */
 export function formatLong(key: DateKey, today?: DateKey): string {

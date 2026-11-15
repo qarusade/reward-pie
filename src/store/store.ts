@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { defaultCategories } from '../palette';
+import { applyCarry, findCarryOffer } from '../lib/carry';
 import { newId } from '../lib/id';
 import { moveTask, nextOrder, withOrder } from '../lib/order';
 import type { Category, DateKey, Reward, Task } from '../types';
@@ -18,6 +19,8 @@ interface Data {
   tasks: Task[];
   /** Стартовые категории уже созданы (чтобы не создавать их повторно после удаления). */
   seeded: boolean;
+  /** День, перенос из которого пользователь отклонил кнопкой «Не нужно». */
+  carryDismissedFrom?: DateKey;
 }
 
 interface Actions {
@@ -31,6 +34,10 @@ interface Actions {
   /** Перетаскивание: ставит задачу на место другой из того же списка (категория + день). */
   moveTask(activeId: string, overId: string): void;
   deleteTask(id: string): void;
+  /** Копирует незакрытые задачи последнего прошлого дня на `today` (см. lib/carry.ts). */
+  carryOver(today: DateKey): void;
+  /** «Не нужно»: больше не предлагать перенос из этого дня. */
+  dismissCarry(from: DateKey): void;
   seedIfNeeded(): void;
 }
 
@@ -119,6 +126,17 @@ export const useStore = create<StoreState>()(
         set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) }));
       },
 
+      carryOver(today) {
+        set((s) => {
+          const offer = findCarryOffer(s.tasks, s.categories, today, s.carryDismissedFrom);
+          return offer ? { tasks: applyCarry(s.tasks, offer, today, newId, Date.now()) } : s;
+        });
+      },
+
+      dismissCarry(from) {
+        set({ carryDismissedFrom: from });
+      },
+
       seedIfNeeded() {
         const s = get();
         if (s.seeded) return;
@@ -130,7 +148,12 @@ export const useStore = create<StoreState>()(
       version: 2,
       storage: createJSONStorage(() => appStorage),
       migrate: (persisted, version) => migrate(persisted, version),
-      partialize: (s): Data => ({ categories: s.categories, tasks: s.tasks, seeded: s.seeded }),
+      partialize: (s): Data => ({
+        categories: s.categories,
+        tasks: s.tasks,
+        seeded: s.seeded,
+        carryDismissedFrom: s.carryDismissedFrom,
+      }),
       onRehydrateStorage: () => (state) => {
         state?.seedIfNeeded();
       },
@@ -141,12 +164,21 @@ export const useStore = create<StoreState>()(
 /**
  * Переход старых сохранённых данных на текущую схему.
  * v1 → v2: у задач появилось поле `order` (порядок внутри категории за день).
+ *
+ * Новые НЕобязательные поля (carriedTo, carriedFrom, carryDismissedFrom) версию не поднимают:
+ * при смене версии старая копия приложения, если она где-то ещё запустится,
+ * не сможет прочитать данные и запишет поверх пустые. Поднимать версию — только когда без этого никак.
  */
 export function migrate(persisted: unknown, version: number): Data {
   const data = (persisted ?? {}) as Partial<Data>;
   let tasks = (data.tasks ?? []) as Task[];
   if (version < 2) tasks = withOrder(tasks);
-  return { categories: data.categories ?? [], tasks, seeded: data.seeded ?? false };
+  return {
+    categories: data.categories ?? [],
+    tasks,
+    seeded: data.seeded ?? false,
+    carryDismissedFrom: data.carryDismissedFrom,
+  };
 }
 
 /** true, когда данные подняты из хранилища — до этого ничего не рисуем, чтобы не мигать пустотой. */

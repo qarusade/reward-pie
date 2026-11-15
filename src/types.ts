@@ -31,6 +31,10 @@ export interface Task {
   doneAt?: number;
   /** Место в списке своей категории за свой день: меньше — выше. Меняется перетаскиванием. */
   order: number;
+  /** Оригинал, который кнопкой «Перенести» скопировали на другой день: куда ушла копия. */
+  carriedTo?: DateKey;
+  /** Копия перенесённой задачи: из какого дня она пришла. */
+  carriedFrom?: DateKey;
 }
 
 export type Tab = 'today' | 'history' | 'rewards';
