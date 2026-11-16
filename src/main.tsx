@@ -15,6 +15,9 @@ import '@fontsource/onest/cyrillic-700.css';
 import '@fontsource/onest/latin-700.css';
 import './styles.css';
 import { App } from './App';
+import { setupUpdates } from './lib/updates';
+
+setupUpdates();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

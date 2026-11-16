@@ -433,6 +433,29 @@ button:disabled {
   margin-top: 5px;
 }
 
+.carry__date {
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.carry--compact {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+}
+
+.carry--compact .carry__title {
+  font-size: 17px;
+}
+
+.carry--compact .carry__actions {
+  flex: 1 1 auto;
+  max-width: 320px;
+}
+
 .carry__more {
   padding-left: 18px;
   color: var(--muted);

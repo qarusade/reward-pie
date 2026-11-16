@@ -97,6 +97,24 @@ describe('store', () => {
     expect(useStore.getState().tasks.filter((t) => t.date === '2026-11-07')).toHaveLength(0);
   });
 
+  it('перенос с конкретного прошлого дня работает и после «Не нужно»', () => {
+    const { addCategory, addTask } = useStore.getState();
+    const id = addCategory({ name: 'A', color: '#000', reward: { kind: 'pizza', name: 'Пицца' } });
+    addTask(id, '2026-11-05', 'старый хвост');
+    addTask(id, '2026-11-10', 'закрыто');
+    useStore.getState().toggleTask(useStore.getState().tasks[1].id);
+    useStore.getState().dismissCarry('2026-11-10');
+    useStore.getState().dismissCarry('2026-11-01');
+    expect(useStore.getState().carryDismissedFrom).toBe('2026-11-10');
+
+    useStore.getState().carryOver('2026-11-16');
+    expect(useStore.getState().tasks.filter((t) => t.date === '2026-11-16')).toHaveLength(0);
+
+    useStore.getState().carryDay('2026-11-05', '2026-11-16');
+    const today = useStore.getState().tasks.filter((t) => t.date === '2026-11-16');
+    expect(today.map((t) => [t.title, t.carriedFrom])).toEqual([['старый хвост', '2026-11-05']]);
+  });
+
   it('данные без новых полей читаются как есть, версия не меняется', () => {
     const v2 = {
       categories: [],

@@ -3,7 +3,7 @@ import { CarryBanner } from '../components/CarryBanner';
 import { CategoryCard } from '../components/CategoryCard';
 import { PlusIcon } from '../components/Icon';
 import { WeekStrip } from '../components/WeekStrip';
-import { findCarryOffer } from '../lib/carry';
+import { dayCarryOffer, findCarryOffer } from '../lib/carry';
 import { dayTitle, formatLong, weekDays } from '../lib/dates';
 import { byOrder } from '../lib/order';
 import { categoriesForDay, dayStats, tasksForDay } from '../lib/stats';
@@ -22,12 +22,19 @@ export function TodayScreen({ date, today, onSelectDate, onEditCategory, onCreat
   const categories = useStore((s) => s.categories);
   const tasks = useStore((s) => s.tasks);
   const carryDismissedFrom = useStore((s) => s.carryDismissedFrom);
+  const carryOver = useStore((s) => s.carryOver);
+  const carryDay = useStore((s) => s.carryDay);
+  const dismissCarry = useStore((s) => s.dismissCarry);
 
   const dayTasks = useMemo(() => tasksForDay(tasks, date).sort(byOrder), [tasks, date]);
   const cats = useMemo(() => categoriesForDay(categories, dayTasks), [categories, dayTasks]);
   const stats = useMemo(() => dayStats(tasks, date), [tasks, date]);
+  // На «Сегодня» — всё незакрытое из прошлых дней; на прошлом дне — только его незакрытое.
   const carry = useMemo(
-    () => (date === today ? findCarryOffer(tasks, categories, today, carryDismissedFrom) : null),
+    () =>
+      date === today
+        ? findCarryOffer(tasks, categories, today, carryDismissedFrom)
+        : dayCarryOffer(tasks, categories, date, today),
     [tasks, categories, today, date, carryDismissedFrom],
   );
   const week = useMemo(
@@ -84,7 +91,27 @@ export function TodayScreen({ date, today, onSelectDate, onEditCategory, onCreat
         </section>
       </div>
 
-      {carry && <CarryBanner offer={carry} today={today} categories={categories} />}
+      {carry &&
+        (date === today ? (
+          <CarryBanner
+            offer={carry}
+            today={today}
+            categories={categories}
+            onCarry={() => carryOver(today)}
+            onDismiss={() => dismissCarry(carry.to)}
+          />
+        ) : (
+          <CarryBanner
+            offer={carry}
+            today={today}
+            categories={categories}
+            compact
+            onCarry={() => {
+              carryDay(date, today);
+              onSelectDate(today);
+            }}
+          />
+        ))}
 
       {cats.length === 0 ? (
         <div className="card empty">

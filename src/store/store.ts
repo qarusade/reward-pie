@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { defaultCategories } from '../palette';
-import { applyCarry, findCarryOffer } from '../lib/carry';
+import { applyCarry, dayCarryOffer, findCarryOffer } from '../lib/carry';
 import { newId } from '../lib/id';
 import { moveTask, nextOrder, withOrder } from '../lib/order';
 import type { Category, DateKey, Reward, Task } from '../types';
@@ -19,7 +19,10 @@ interface Data {
   tasks: Task[];
   /** Стартовые категории уже созданы (чтобы не создавать их повторно после удаления). */
   seeded: boolean;
-  /** День, перенос из которого пользователь отклонил кнопкой «Не нужно». */
+  /**
+   * «Не нужно» на плашке переноса: дни по этот включительно плашка больше не предлагает.
+   * (Имя поля историческое — сначала здесь хранился один отклонённый день.)
+   */
   carryDismissedFrom?: DateKey;
 }
 
@@ -34,10 +37,12 @@ interface Actions {
   /** Перетаскивание: ставит задачу на место другой из того же списка (категория + день). */
   moveTask(activeId: string, overId: string): void;
   deleteTask(id: string): void;
-  /** Копирует незакрытые задачи последнего прошлого дня на `today` (см. lib/carry.ts). */
+  /** Плашка на «Сегодня»: копирует на `today` всё незакрытое из прошлых дней (см. lib/carry.ts). */
   carryOver(today: DateKey): void;
-  /** «Не нужно»: больше не предлагать перенос из этого дня. */
-  dismissCarry(from: DateKey): void;
+  /** Кнопка на экране прошлого дня: копирует на `today` незакрытое только из `day`. */
+  carryDay(day: DateKey, today: DateKey): void;
+  /** «Не нужно»: плашка больше не предлагает дни по `upTo` включительно. */
+  dismissCarry(upTo: DateKey): void;
   seedIfNeeded(): void;
 }
 
@@ -133,8 +138,17 @@ export const useStore = create<StoreState>()(
         });
       },
 
-      dismissCarry(from) {
-        set({ carryDismissedFrom: from });
+      carryDay(day, today) {
+        set((s) => {
+          const offer = dayCarryOffer(s.tasks, s.categories, day, today);
+          return offer ? { tasks: applyCarry(s.tasks, offer, today, newId, Date.now()) } : s;
+        });
+      },
+
+      dismissCarry(upTo) {
+        set((s) => ({
+          carryDismissedFrom: s.carryDismissedFrom && s.carryDismissedFrom > upTo ? s.carryDismissedFrom : upTo,
+        }));
       },
 
       seedIfNeeded() {
