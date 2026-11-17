@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { migrate, useStore } from './store';
 
-const reset = () => useStore.setState({ categories: [], tasks: [], seeded: false, carryDismissedFrom: undefined });
+const reset = () =>
+  useStore.setState({ categories: [], tasks: [], seeded: false, carryDismissedFrom: undefined, carryRepaired: undefined });
 
 describe('store', () => {
   beforeEach(reset);
@@ -115,13 +116,46 @@ describe('store', () => {
     expect(today.map((t) => [t.title, t.carriedFrom])).toEqual([['старый хвост', '2026-11-05']]);
   });
 
+  it('задача переносится по одной, удаление копии возвращает её в свой день', () => {
+    const { addCategory, addTask } = useStore.getState();
+    const id = addCategory({ name: 'A', color: '#000', reward: { kind: 'pizza', name: 'Пицца' } });
+    addTask(id, '2026-11-05', 'старая');
+    const original = useStore.getState().tasks[0];
+    useStore.getState().carryTask(original.id, '2026-11-18');
+    useStore.getState().carryTask(original.id, '2026-11-18');
+    const copies = useStore.getState().tasks.filter((t) => t.date === '2026-11-18');
+    expect(copies.map((t) => [t.title, t.carriedFrom])).toEqual([['старая', '2026-11-05']]);
+
+    useStore.getState().deleteTask(copies[0].id);
+    expect(useStore.getState().tasks).toHaveLength(1);
+    expect(useStore.getState().tasks[0].carriedTo).toBeUndefined();
+  });
+
+  it('ремонт массового переноса выполняется один раз', () => {
+    useStore.setState({
+      categories: [{ id: 'w', name: 'W', color: '#000', reward: { kind: 'pizza', name: 'Пицца' }, createdAt: 0 }],
+      tasks: [
+        { id: 'o', categoryId: 'w', date: '2026-11-05', title: 'x', done: false, createdAt: 1, order: 0, carriedTo: '2026-11-18' },
+        { id: 'c', categoryId: 'w', date: '2026-11-18', title: 'x', done: false, createdAt: 2, order: 0, carriedFrom: '2026-11-05' },
+      ],
+    });
+    useStore.getState().repairCarryIfNeeded();
+    expect(useStore.getState().tasks.map((t) => [t.id, t.carriedTo])).toEqual([['o', undefined]]);
+    expect(useStore.getState().carryRepaired).toBe(true);
+
+    // после ремонта ручной перенос старой задачи не откатывается
+    useStore.getState().carryTask('o', '2026-11-18');
+    useStore.getState().repairCarryIfNeeded();
+    expect(useStore.getState().tasks).toHaveLength(2);
+  });
+
   it('данные без новых полей читаются как есть, версия не меняется', () => {
     const v2 = {
       categories: [],
       tasks: [{ id: 'a', categoryId: 'work', date: '2026-11-05', title: 'a', done: false, createdAt: 1, order: 0 }],
       seeded: true,
     };
-    expect(migrate(v2, 2)).toEqual({ ...v2, carryDismissedFrom: undefined });
+    expect(migrate(v2, 2)).toEqual({ ...v2, carryDismissedFrom: undefined, carryRepaired: undefined });
     expect(useStore.persist.getOptions().version).toBe(2);
   });
 });

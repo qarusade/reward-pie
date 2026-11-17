@@ -56,6 +56,13 @@ export const MoreIcon = ({ size = 20 }: IconProps) => (
   </svg>
 );
 
+/** «Перенести на сегодня»: стрелка вправо в рамке дня. */
+export const CarryIcon = (p: IconProps) => (
+  <Svg size={20} strokeWidth={2.4} {...p}>
+    <path d="M4 12h12M11 6.5l5.5 5.5-5.5 5.5M20 5v14" />
+  </Svg>
+);
+
 /** Ручка для перетаскивания: две колонки по три точки. */
 export const GripIcon = ({ size = 20 }: IconProps) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">

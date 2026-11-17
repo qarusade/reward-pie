@@ -12,10 +12,12 @@ interface Props {
   /** Задачи этой категории за выбранный день. */
   tasks: Task[];
   date: DateKey;
+  /** Задан, если `date` — прошлый день: тогда у незакрытых задач есть кнопка переноса. */
+  onCarryTask?(id: string): void;
   onEdit(categoryId: string): void;
 }
 
-export function CategoryCard({ category, tasks, date, onEdit }: Props) {
+export function CategoryCard({ category, tasks, date, onCarryTask, onEdit }: Props) {
   const headingId = useId();
   const p = progressOf(tasks);
   const left = p.total - p.done;
@@ -58,7 +60,7 @@ export function CategoryCard({ category, tasks, date, onEdit }: Props) {
         </div>
       </div>
 
-      {tasks.length > 0 && <TaskList tasks={tasks} />}
+      {tasks.length > 0 && <TaskList tasks={tasks} onCarry={category.archived ? undefined : onCarryTask} />}
 
       {!category.archived && <AddTaskForm category={category} date={date} />}
     </section>

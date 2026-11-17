@@ -2,7 +2,14 @@ import { useEffect, useState } from 'react';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { defaultCategories } from '../palette';
-import { applyCarry, dayCarryOffer, findCarryOffer } from '../lib/carry';
+import {
+  applyCarry,
+  dayCarryOffer,
+  deleteWithUncarry,
+  findCarryOffer,
+  taskCarryOffer,
+  undoBulkCarry,
+} from '../lib/carry';
 import { newId } from '../lib/id';
 import { moveTask, nextOrder, withOrder } from '../lib/order';
 import type { Category, DateKey, Reward, Task } from '../types';
@@ -24,6 +31,8 @@ interface Data {
    * (Имя поля историческое — сначала здесь хранился один отклонённый день.)
    */
   carryDismissedFrom?: DateKey;
+  /** Разовый ремонт массового переноса (см. undoBulkCarry) уже выполнен. */
+  carryRepaired?: boolean;
 }
 
 interface Actions {
@@ -37,13 +46,17 @@ interface Actions {
   /** Перетаскивание: ставит задачу на место другой из того же списка (категория + день). */
   moveTask(activeId: string, overId: string): void;
   deleteTask(id: string): void;
-  /** Плашка на «Сегодня»: копирует на `today` всё незакрытое из прошлых дней (см. lib/carry.ts). */
+  /** Плашка на «Сегодня»: копирует на `today` незакрытое за вчера (см. lib/carry.ts). */
   carryOver(today: DateKey): void;
   /** Кнопка на экране прошлого дня: копирует на `today` незакрытое только из `day`. */
   carryDay(day: DateKey, today: DateKey): void;
+  /** Кнопка у задачи прошлого дня: копирует на `today` только её. */
+  carryTask(id: string, today: DateKey): void;
   /** «Не нужно»: плашка больше не предлагает дни по `upTo` включительно. */
   dismissCarry(upTo: DateKey): void;
   seedIfNeeded(): void;
+  /** Один раз после обновления: убрать лишние копии массового переноса. */
+  repairCarryIfNeeded(): void;
 }
 
 export type StoreState = Data & Actions;
@@ -128,7 +141,7 @@ export const useStore = create<StoreState>()(
       },
 
       deleteTask(id) {
-        set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) }));
+        set((s) => ({ tasks: deleteWithUncarry(s.tasks, id) }));
       },
 
       carryOver(today) {
@@ -145,6 +158,13 @@ export const useStore = create<StoreState>()(
         });
       },
 
+      carryTask(id, today) {
+        set((s) => {
+          const offer = taskCarryOffer(s.tasks, s.categories, id, today);
+          return offer ? { tasks: applyCarry(s.tasks, offer, today, newId, Date.now()) } : s;
+        });
+      },
+
       dismissCarry(upTo) {
         set((s) => ({
           carryDismissedFrom: s.carryDismissedFrom && s.carryDismissedFrom > upTo ? s.carryDismissedFrom : upTo,
@@ -155,6 +175,12 @@ export const useStore = create<StoreState>()(
         const s = get();
         if (s.seeded) return;
         set({ seeded: true, categories: s.categories.length ? s.categories : defaultCategories() });
+      },
+
+      repairCarryIfNeeded() {
+        const s = get();
+        if (s.carryRepaired) return;
+        set({ carryRepaired: true, tasks: undoBulkCarry(s.tasks) });
       },
     }),
     {
@@ -167,9 +193,11 @@ export const useStore = create<StoreState>()(
         tasks: s.tasks,
         seeded: s.seeded,
         carryDismissedFrom: s.carryDismissedFrom,
+        carryRepaired: s.carryRepaired,
       }),
       onRehydrateStorage: () => (state) => {
         state?.seedIfNeeded();
+        state?.repairCarryIfNeeded();
       },
     },
   ),
@@ -179,7 +207,7 @@ export const useStore = create<StoreState>()(
  * Переход старых сохранённых данных на текущую схему.
  * v1 → v2: у задач появилось поле `order` (порядок внутри категории за день).
  *
- * Новые НЕобязательные поля (carriedTo, carriedFrom, carryDismissedFrom) версию не поднимают:
+ * Новые НЕобязательные поля (carriedTo, carriedFrom, carryDismissedFrom, carryRepaired) версию не поднимают:
  * при смене версии старая копия приложения, если она где-то ещё запустится,
  * не сможет прочитать данные и запишет поверх пустые. Поднимать версию — только когда без этого никак.
  */
@@ -192,6 +220,7 @@ export function migrate(persisted: unknown, version: number): Data {
     tasks,
     seeded: data.seeded ?? false,
     carryDismissedFrom: data.carryDismissedFrom,
+    carryRepaired: data.carryRepaired,
   };
 }
 

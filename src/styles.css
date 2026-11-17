@@ -433,10 +433,10 @@ button:disabled {
   margin-top: 5px;
 }
 
-.carry__date {
+.carry__hint {
+  margin: 0;
   color: var(--muted);
   font-size: 13px;
-  white-space: nowrap;
 }
 
 .carry--compact {
@@ -676,6 +676,15 @@ button:disabled {
 .task__toggle[aria-pressed='true'] .task__title {
   color: var(--muted);
   text-decoration: line-through;
+}
+
+.task__carry {
+  align-self: center;
+  color: var(--ink);
+}
+
+.task__carry:hover {
+  background: var(--paper);
 }
 
 .task__delete {

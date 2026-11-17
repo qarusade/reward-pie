@@ -24,12 +24,13 @@ export function TodayScreen({ date, today, onSelectDate, onEditCategory, onCreat
   const carryDismissedFrom = useStore((s) => s.carryDismissedFrom);
   const carryOver = useStore((s) => s.carryOver);
   const carryDay = useStore((s) => s.carryDay);
+  const carryTask = useStore((s) => s.carryTask);
   const dismissCarry = useStore((s) => s.dismissCarry);
 
   const dayTasks = useMemo(() => tasksForDay(tasks, date).sort(byOrder), [tasks, date]);
   const cats = useMemo(() => categoriesForDay(categories, dayTasks), [categories, dayTasks]);
   const stats = useMemo(() => dayStats(tasks, date), [tasks, date]);
-  // На «Сегодня» — всё незакрытое из прошлых дней; на прошлом дне — только его незакрытое.
+  // На «Сегодня» — незакрытое за вчера; на прошлом дне — его незакрытое (кнопка «Перенести все»).
   const carry = useMemo(
     () =>
       date === today
@@ -126,6 +127,7 @@ export function TodayScreen({ date, today, onSelectDate, onEditCategory, onCreat
               category={c}
               tasks={dayTasks.filter((t) => t.categoryId === c.id)}
               date={date}
+              onCarryTask={date < today ? (id) => carryTask(id, today) : undefined}
               onEdit={onEditCategory}
             />
           ))}

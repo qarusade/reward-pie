@@ -1,6 +1,6 @@
 import { useId, type CSSProperties } from 'react';
 import type { CarryOffer } from '../lib/carry';
-import { addDays, formatDayMonth, formatLong } from '../lib/dates';
+import { addDays, formatLong } from '../lib/dates';
 import { tasksWord } from '../lib/plural';
 import type { Category, DateKey } from '../types';
 
@@ -17,9 +17,8 @@ interface Props {
   compact?: boolean;
 }
 
-/** Откуда задачи: «Вчера», «Среда, 11 ноября» или «5 ноября — 15 ноября». */
+/** Откуда задачи: «Вчера» или «Среда, 11 ноября». */
 function whenLabel(offer: CarryOffer, today: DateKey): string {
-  if (offer.from !== offer.to) return `${formatDayMonth(offer.from)} — ${formatDayMonth(offer.to)}`;
   return offer.from === addDays(today, -1) ? 'Вчера' : formatLong(offer.from, today);
 }
 
@@ -28,7 +27,6 @@ export function CarryBanner({ offer, today, categories, onCarry, onDismiss, comp
   const headingId = useId();
   const color = new Map(categories.map((c) => [c.id, c.color]));
   const left = offer.tasks.length;
-  const severalDays = offer.from !== offer.to;
 
   return (
     <section className={`card carry${compact ? ' carry--compact' : ''}`} aria-labelledby={headingId}>
@@ -37,15 +35,13 @@ export function CarryBanner({ offer, today, categories, onCarry, onDismiss, comp
         <h2 id={headingId} className="carry__title">
           Не закрыто: {left} {tasksWord(left)}
         </h2>
+        {compact && left > 1 && <p className="carry__hint">Или по одной — стрелкой у задачи</p>}
         {!compact && (
           <ul className="carry__list">
             {offer.tasks.slice(0, SHOWN).map((t) => (
               <li key={t.id} style={{ '--cat': color.get(t.categoryId) } as CSSProperties}>
                 <span className="dot" aria-hidden="true" />
-                <span>
-                  {t.title}
-                  {severalDays && <span className="carry__date"> · {formatDayMonth(t.date)}</span>}
-                </span>
+                <span>{t.title}</span>
               </li>
             ))}
             {left > SHOWN && <li className="carry__more">и ещё {left - SHOWN}</li>}
@@ -54,7 +50,7 @@ export function CarryBanner({ offer, today, categories, onCarry, onDismiss, comp
       </div>
       <div className="carry__actions">
         <button type="button" className="btn btn--primary" onClick={onCarry}>
-          Перенести на сегодня
+          {compact && left > 1 ? 'Перенести все на сегодня' : 'Перенести на сегодня'}
         </button>
         {onDismiss && (
           <button type="button" className="btn" onClick={onDismiss}>

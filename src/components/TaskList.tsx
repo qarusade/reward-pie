@@ -17,7 +17,7 @@ import type { CSSProperties } from 'react';
 import { formatDayMonth } from '../lib/dates';
 import { useStore } from '../store/store';
 import type { Task } from '../types';
-import { CheckIcon, GripIcon, TrashIcon } from './Icon';
+import { CarryIcon, CheckIcon, GripIcon, TrashIcon } from './Icon';
 
 /** Двигаем только вверх-вниз, чтобы задача не уезжала вбок. */
 const onlyVertical: Modifier = ({ transform }) => ({ ...transform, x: 0 });
@@ -28,8 +28,14 @@ const instructions: ScreenReaderInstructions = {
     'пробелом или Enter поставь. Esc — отмена.',
 };
 
+interface Props {
+  tasks: Task[];
+  /** Только на прошлом дне: перенести одну задачу на сегодня (кнопка-стрелка у незакрытых). */
+  onCarry?(id: string): void;
+}
+
 /** Задачи одной категории за один день. Порядок меняется перетаскиванием за ручку слева. */
-export function TaskList({ tasks }: { tasks: Task[] }) {
+export function TaskList({ tasks, onCarry }: Props) {
   const moveTask = useStore((s) => s.moveTask);
   const sensors = useSensors(
     // Мышь и палец: перетаскивание начинается, когда ручку сдвинули на 4px, — простой тап ничего не ломает.
@@ -63,7 +69,7 @@ export function TaskList({ tasks }: { tasks: Task[] }) {
       <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
         <ul className="tasks">
           {tasks.map((t) => (
-            <TaskRow key={t.id} task={t} />
+            <TaskRow key={t.id} task={t} onCarry={onCarry} />
           ))}
         </ul>
       </SortableContext>
@@ -71,7 +77,7 @@ export function TaskList({ tasks }: { tasks: Task[] }) {
   );
 }
 
-function TaskRow({ task }: { task: Task }) {
+function TaskRow({ task, onCarry }: { task: Task; onCarry?(id: string): void }) {
   const toggleTask = useStore((s) => s.toggleTask);
   const deleteTask = useStore((s) => s.deleteTask);
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
@@ -102,12 +108,26 @@ function TaskRow({ task }: { task: Task }) {
           )}
         </span>
       </button>
+      {onCarry && !task.done && !task.carriedTo && (
+        <button
+          type="button"
+          className="icon-btn task__carry"
+          aria-label={`Перенести задачу «${task.title}» на сегодня`}
+          title="Перенести на сегодня"
+          onClick={() => onCarry(task.id)}
+        >
+          <CarryIcon />
+        </button>
+      )}
       <button
         type="button"
         className="icon-btn task__delete"
         aria-label={`Удалить задачу «${task.title}»`}
         onClick={() => {
-          if (window.confirm(`Удалить задачу «${task.title}»?`)) deleteTask(task.id);
+          const question = task.carriedFrom
+            ? `Убрать «${task.title}» из этого дня? За ${formatDayMonth(task.carriedFrom)} она останется незакрытой — её можно будет перенести снова.`
+            : `Удалить задачу «${task.title}»?`;
+          if (window.confirm(question)) deleteTask(task.id);
         }}
       >
         <TrashIcon />
